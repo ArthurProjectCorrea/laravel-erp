@@ -1,0 +1,22 @@
+pre-commit:
+  # run lint, php pint and formatting checks before committing
+  parallel: true
+  commands:
+    eslint:
+      run: npm run lint
+      allow_empty: true
+      include: "resources/js"
+
+    pint:
+      # run Pint in auto-fix mode so style issues are corrected before commit
+      run: composer pint
+      allow_empty: true
+      include: "app,config,database,resources,routes,tests"
+
+    format:
+      # run Prettier write to fix formatting issues automatically
+      run: npm run format
+      allow_empty: true
+      include: "resources"
+
+# Optional: hook installer will wire Git hooks when you run `npx lefthook install`
