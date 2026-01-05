@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -16,6 +17,30 @@
                         document.documentElement.classList.add('dark');
                     }
                 }
+            })();
+        </script>
+
+        {{-- Inline script to setup fetch interceptor BEFORE any requests are made --}}
+        <script>
+            (function() {
+                console.log('[BLADE-FETCH-INTERCEPTOR] Configurando fetch interceptor no reload');
+                const originalFetch = window.fetch;
+                
+                window.fetch = function(input, init) {
+                    const token = localStorage.getItem('auth_token');
+                    if (token) {
+                        console.log('[BLADE-FETCH-INTERCEPTOR] Token encontrado no localStorage, adicionando ao fetch');
+                        const newInit = init ? { ...init } : {};
+                        const existingHeaders = newInit.headers || {};
+                        newInit.headers = {
+                            ...existingHeaders,
+                            'Authorization': `Bearer ${token}`,
+                        };
+                        return originalFetch(input, newInit);
+                    }
+                    return originalFetch(input, init);
+                };
+                console.log('[BLADE-FETCH-INTERCEPTOR] Fetch interceptor pronto');
             })();
         </script>
 

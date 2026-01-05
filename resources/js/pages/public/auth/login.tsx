@@ -26,7 +26,7 @@ interface LoginErrors {
     password?: string;
 }
 
-export function Login({ className, ...props }: React.ComponentProps<'div'>) {
+export function Login({ className }: React.ComponentProps<'div'>) {
     const [formData, setFormData] = useState<LoginFormData>({
         email: '',
         password: '',
@@ -37,6 +37,8 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        console.log('[LOGIN] ===== INICIANDO LOGIN =====');
+        console.log('[LOGIN] Email:', formData.email);
 
         // Clear previous field errors
         setFieldErrors({});
@@ -47,11 +49,13 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
         if (!formData.password) newErrors.password = 'Password is required';
 
         if (Object.keys(newErrors).length > 0) {
+            console.log('[LOGIN] Validação falhou:', newErrors);
             setFieldErrors(newErrors);
             return;
         }
 
         setIsLoading(true);
+        console.log('[LOGIN] Enviando requisição para /api/login');
 
         try {
             const response = await fetch('/api/login', {
@@ -63,9 +67,17 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
                 body: JSON.stringify(formData),
             });
 
+            console.log('[LOGIN] Resposta recebida - Status:', response.status);
             const responseData = await response.json();
+            console.log('[LOGIN] Dados da resposta:', {
+                status: response.status,
+                hasToken: !!responseData?.token,
+                tokenPreview: responseData?.token?.substring(0, 20),
+                message: responseData?.message,
+            });
 
             if (!response.ok) {
+                console.log('[LOGIN] Falha no login - Erro:', responseData);
                 if (responseData.errors?.email) {
                     setFieldErrors({ email: responseData.errors.email[0] });
                 }
@@ -77,17 +89,26 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
 
             // Store token from response
             if (responseData?.token) {
+                console.log('[LOGIN] Token recebido, armazenando...');
                 setAuthToken(responseData.token);
+                console.log('[LOGIN] Token armazenado com sucesso');
+            } else {
+                console.log('[LOGIN] AVISO: Nenhum token na resposta!');
             }
 
+            console.log('[LOGIN] Login bem-sucedido, redirecionando...');
             toast.success('Login realizado com sucesso!', {
                 description: 'Redirecionando para o painel...',
             });
 
             // Redirect to dashboard
+            console.log('[LOGIN] Chamando redirectToDashboard()');
             redirectToDashboard();
+            console.log(
+                '[LOGIN] AVISO: código após redirectToDashboard executou (não deveria acontecer se redirect funcionar)',
+            );
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('[LOGIN] Erro durante login:', error);
             toast.error('Erro ao fazer login', {
                 description: 'Tente novamente mais tarde',
             });
@@ -98,7 +119,7 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
 
     return (
         <AuthLayout>
-            <div className={cn('flex flex-col gap-6', className)} {...props}>
+            <div className={cn('flex flex-col gap-6', className)}>
                 <Card className="overflow-hidden p-0">
                     <CardContent className="grid p-0 md:grid-cols-2">
                         <form className="p-6 md:p-8" onSubmit={handleSubmit}>
@@ -186,13 +207,7 @@ export function Login({ className, ...props }: React.ComponentProps<'div'>) {
                                 </Field>
                             </FieldGroup>
                         </form>
-                        <div className="relative hidden bg-muted md:block">
-                            <img
-                                src="/placeholder.svg"
-                                alt="Image"
-                                className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-                            />
-                        </div>
+                        <div className="relative hidden bg-muted md:block"></div>
                     </CardContent>
                 </Card>
                 <FieldDescription className="px-6 text-center">

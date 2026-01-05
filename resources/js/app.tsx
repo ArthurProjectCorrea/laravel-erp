@@ -6,8 +6,14 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
 import { setupAuthInterceptor } from './middleware/auth-interceptor';
+import { getAuthToken } from './utils/auth';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Setup auth interceptor ANTES de criar a app Inertia
+console.log('[APP] Inicializando setupAuthInterceptor ANTES de Inertia');
+setupAuthInterceptor();
+console.log('[APP] setupAuthInterceptor iniciado com sucesso');
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -33,5 +39,24 @@ createInertiaApp({
 // This will set light / dark mode on load...
 initializeTheme();
 
-// Setup auth interceptor for token-based requests
-setupAuthInterceptor();
+// Add authorization header to all Inertia requests
+// This ensures Bearer token is sent on reload and navigation
+console.log('[APP] Configurando middleware de headers do Inertia');
+const originalFetch = window.fetch;
+window.fetch = function (input, init) {
+    const token = getAuthToken();
+    if (token) {
+        console.log(
+            '[INERTIA-FETCH] Adicionando Bearer token à requisição Inertia',
+        );
+        const newInit = init ? { ...init } : {};
+        const existingHeaders = newInit.headers || {};
+        newInit.headers = {
+            ...existingHeaders,
+            Authorization: `Bearer ${token}`,
+        };
+        return originalFetch(input, newInit);
+    }
+    return originalFetch(input, init);
+};
+console.log('[APP] Middleware de headers configurado');

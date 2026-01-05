@@ -9,7 +9,7 @@ pre-commit:
 
     pint:
       # run Pint in auto-fix mode so style issues are corrected before commit
-      run: composer pint
+      run: vendor/bin/pint
       allow_empty: true
       include: "app,config,database,resources,routes,tests"
 

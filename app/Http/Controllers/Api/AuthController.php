@@ -17,45 +17,89 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
+        Log::info('[API-LOGIN] ===== INICIANDO LOGIN =====', [
+            'email_provided' => $request->input('email'),
+            'ip' => $request->ip(),
+        ]);
+
         // Validate input
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
 
-        $email = $request->input('email');
-        $password = $request->input('password');
+        Log::info('[API-LOGIN] Validação passou');
+
+        $email = $validated['email'];
+        $password = $validated['password'];
 
         // Find user by email
         $user = User::where('email', $email)->first();
+        Log::info('[API-LOGIN] Procurando usuário por email', [
+            'email' => $email,
+            'user_found' => (bool) $user,
+            'user_id' => $user?->id,
+            'user_is_active' => $user?->is_active,
+        ]);
 
         // Check if user exists, is active, and password is correct
-        if (! $user || ! Hash::check($password, $user->password) || ! $user->is_active) {
-            Log::warning('Failed login attempt', [
-                'email' => $email,
-                'reason' => ! $user ? 'user_not_found' : (! $user->is_active ? 'user_inactive' : 'invalid_password'),
-                'ip' => $request->ip(),
-            ]);
-
+        if (! $user) {
+            Log::warning('[API-LOGIN] Falha: Usuário não encontrado', ['email' => $email]);
             throw ValidationException::withMessages([
-                'email' => ['As credenciais fornecidas são inválidas.'],
+                'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // Create new Sanctum token
-        $token = $user->createToken('web')->plainTextToken;
+        if (! Hash::check($password, $user->password)) {
+            Log::warning('[API-LOGIN] Falha: Senha incorreta', [
+                'email' => $email,
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+            ]);
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
 
-        Log::info('User login successful', [
+        if (! $user->is_active) {
+            Log::warning('[API-LOGIN] Falha: Usuário inativo', [
+                'email' => $email,
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+            ]);
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        Log::info('[API-LOGIN] Credenciais validadas com sucesso');
+
+        // Create new Sanctum token
+        Log::info('[API-LOGIN] Criando token Sanctum');
+        $token = $user->createToken('web')->plainTextToken;
+        Log::info('[API-LOGIN] Token criado', [
+            'token_preview' => substr($token, 0, 20).'...',
+            'user_id' => $user->id,
+        ]);
+
+        Log::info('[API-LOGIN] Login bem-sucedido', [
             'user_id' => $user->id,
             'email' => $user->email,
+            'token_preview' => substr($token, 0, 20).'...',
             'ip' => $request->ip(),
         ]);
 
-        return response()->json([
-            'message' => 'Login realizado com sucesso',
+        $response = [
+            'message' => 'Login successful',
             'user' => $user,
             'token' => $token,
-        ], 200);
+        ];
+
+        Log::info('[API-LOGIN] Enviando resposta', [
+            'has_token' => (bool) ($response['token'] ?? null),
+        ]);
+
+        return response()->json($response, 200);
     }
 
     /**
@@ -63,17 +107,50 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Revoke the current token
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
 
-        Log::info('User logout successful', [
-            'user_id' => $request->user()->id,
-            'email' => $request->user()->email,
+        Log::info('[API-LOGOUT] ===== INICIANDO LOGOUT =====', [
+            'user_id' => $user?->id,
+            'email' => $user?->email,
+            'ip' => $request->ip(),
+        ]);
+
+        if (! $user) {
+            Log::warning('[API-LOGOUT] Tentativa de logout sem usuário autenticado', [
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => 'No authenticated user',
+            ], 401);
+        }
+
+        $token = $user->currentAccessToken();
+        Log::info('[API-LOGOUT] Token atual encontrado', [
+            'user_id' => $user->id,
+            'token_preview' => $token ? substr($token->token, 0, 20) : 'null',
+        ]);
+
+        if ($token) {
+            $token->delete();
+            Log::info('[API-LOGOUT] Token revogado com sucesso', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        } else {
+            Log::warning('[API-LOGOUT] Nenhum token para revogar', [
+                'user_id' => $user->id,
+            ]);
+        }
+
+        Log::info('[API-LOGOUT] Logout bem-sucedido', [
+            'user_id' => $user->id,
+            'email' => $user->email,
             'ip' => $request->ip(),
         ]);
 
         return response()->json([
-            'message' => 'Logout realizado com sucesso',
+            'message' => 'Logout successful',
         ], 200);
     }
 

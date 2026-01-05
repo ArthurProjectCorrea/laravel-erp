@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Middleware\AuthenticateFromToken;
 use App\Http\Middleware\AuthenticateWithToken;
 use App\Http\Middleware\EnsureTokenNotRevoked;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetAuthHeaderMeta;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,12 +26,19 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            SetAuthHeaderMeta::class,
         ]);
+
+        // Add Sanctum token authentication to web middleware
+        $middleware->statefulApi();
+
+        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
 
         $middleware->alias([
             'auth.active' => EnsureUserIsActive::class,
             'token.not.revoked' => EnsureTokenNotRevoked::class,
             'auth.token' => AuthenticateWithToken::class,
+            'auth.from-token' => AuthenticateFromToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

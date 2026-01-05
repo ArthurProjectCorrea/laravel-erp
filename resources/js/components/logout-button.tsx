@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { logout } from '@/routes';
-import { removeAuthToken } from '@/utils/auth';
-import { useForm } from '@inertiajs/react';
-import { ReactNode } from 'react';
+import { getAuthToken, redirectToLogin, removeAuthToken } from '@/utils/auth';
+import { ReactNode, useState } from 'react';
+import { toast } from 'sonner';
 
 interface LogoutButtonProps {
     variant?:
@@ -23,14 +22,60 @@ export function LogoutButton({
     children = 'Logout',
     className,
 }: LogoutButtonProps) {
-    const { post, processing } = useForm({});
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogout = () => {
-        post(logout.url(), {
-            onSuccess: () => {
-                removeAuthToken();
-            },
-        });
+    const handleLogout = async () => {
+        console.log('[LOGOUT] ===== INICIANDO LOGOUT =====');
+        const token = getAuthToken();
+        console.log('[LOGOUT] Token Bearer:', token ? 'SIM' : 'NÃO');
+
+        setIsLoading(true);
+
+        try {
+            // Fazer POST para /api/logout usando Bearer token (não precisa de CSRF)
+            const response = await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({}),
+            });
+
+            console.log('[LOGOUT] Resposta do servidor:', response.status);
+
+            if (!response.ok) {
+                console.error(
+                    '[LOGOUT] Erro ao fazer logout:',
+                    response.status,
+                );
+                toast.error('Erro ao fazer logout', {
+                    description: 'Tente novamente',
+                });
+                return;
+            }
+
+            console.log(
+                '[LOGOUT] Logout sucesso, removendo token do localStorage',
+            );
+            removeAuthToken();
+            console.log('[LOGOUT] Token removido do localStorage');
+
+            toast.success('Logout realizado com sucesso!', {
+                description: 'Redirecionando...',
+            });
+
+            // Redirecionar para login
+            redirectToLogin();
+        } catch (error) {
+            console.error('[LOGOUT] Erro durante logout:', error);
+            toast.error('Erro ao fazer logout', {
+                description: 'Tente novamente mais tarde',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -38,10 +83,10 @@ export function LogoutButton({
             variant={variant}
             size={size}
             onClick={handleLogout}
-            disabled={processing}
+            disabled={isLoading}
             className={className}
         >
-            {processing ? 'Logging out...' : children}
+            {isLoading ? 'Saindo...' : children}
         </Button>
     );
 }
