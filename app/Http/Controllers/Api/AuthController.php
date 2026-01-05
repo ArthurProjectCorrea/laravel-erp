@@ -38,7 +38,7 @@ class AuthController extends Controller
             ]);
 
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are invalid.'],
+                'email' => ['As credenciais fornecidas são inválidas.'],
             ]);
         }
 
@@ -52,7 +52,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Login successful',
+            'message' => 'Login realizado com sucesso',
             'user' => $user,
             'token' => $token,
         ], 200);
@@ -73,7 +73,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Logout successful',
+            'message' => 'Logout realizado com sucesso',
         ], 200);
     }
 

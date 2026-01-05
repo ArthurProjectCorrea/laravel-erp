@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateWithToken;
 use App\Http\Middleware\EnsureTokenNotRevoked;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.active' => EnsureUserIsActive::class,
             'token.not.revoked' => EnsureTokenNotRevoked::class,
+            'auth.token' => AuthenticateWithToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
