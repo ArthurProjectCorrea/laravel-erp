@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { cn } from '@/lib/utils';
-import { redirectToDashboard, setAuthToken } from '@/utils/auth';
+import { router } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -55,66 +55,38 @@ export function Login({ className }: React.ComponentProps<'div'>) {
         }
 
         setIsLoading(true);
-        console.log('[LOGIN] Enviando requisição para /api/login');
+        console.log(
+            '[LOGIN] Enviando requisição para /login (Fortify - session based)',
+        );
 
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            console.log('[LOGIN] Resposta recebida - Status:', response.status);
-            const responseData = await response.json();
-            console.log('[LOGIN] Dados da resposta:', {
-                status: response.status,
-                hasToken: !!responseData?.token,
-                tokenPreview: responseData?.token?.substring(0, 20),
-                message: responseData?.message,
-            });
-
-            if (!response.ok) {
-                console.log('[LOGIN] Falha no login - Erro:', responseData);
-                if (responseData.errors?.email) {
-                    setFieldErrors({ email: responseData.errors.email[0] });
+        // Usar Inertia router para fazer login via Fortify (session-based)
+        // Isso cria uma sessão e cookie, que persiste após reload
+        router.post('/login', formData, {
+            onSuccess: () => {
+                console.log('[LOGIN] Login bem-sucedido via Fortify!');
+                toast.success('Login realizado com sucesso!', {
+                    description: 'Redirecionando para o painel...',
+                });
+            },
+            onError: (errors) => {
+                console.log('[LOGIN] Falha no login - Erros:', errors);
+                if (errors.email) {
+                    setFieldErrors({ email: errors.email });
+                }
+                if (errors.password) {
+                    setFieldErrors((prev) => ({
+                        ...prev,
+                        password: errors.password,
+                    }));
                 }
                 toast.error('Credenciais inválidas', {
                     description: 'Verifique seu e-mail e senha',
                 });
-                return;
-            }
-
-            // Store token from response
-            if (responseData?.token) {
-                console.log('[LOGIN] Token recebido, armazenando...');
-                setAuthToken(responseData.token);
-                console.log('[LOGIN] Token armazenado com sucesso');
-            } else {
-                console.log('[LOGIN] AVISO: Nenhum token na resposta!');
-            }
-
-            console.log('[LOGIN] Login bem-sucedido, redirecionando...');
-            toast.success('Login realizado com sucesso!', {
-                description: 'Redirecionando para o painel...',
-            });
-
-            // Redirect to dashboard
-            console.log('[LOGIN] Chamando redirectToDashboard()');
-            redirectToDashboard();
-            console.log(
-                '[LOGIN] AVISO: código após redirectToDashboard executou (não deveria acontecer se redirect funcionar)',
-            );
-        } catch (error) {
-            console.error('[LOGIN] Erro durante login:', error);
-            toast.error('Erro ao fazer login', {
-                description: 'Tente novamente mais tarde',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+            },
+            onFinish: () => {
+                setIsLoading(false);
+            },
+        });
     };
 
     return (

@@ -40,136 +40,49 @@ Important project conventions
 - Example: See [routes/api.php](routes/api.php) for auth endpoints
 
 ### Inertia Pages
-- Add React pages to `resources/js/pages/Name.tsx`
-- Routes return `Inertia::render('Name', [props])` from [routes/web.php](routes/web.php)
-- Layout: Root Blade template at [resources/views/app.blade.php](resources/views/app.blade.php)
+<!-- Copilot instructions (concise, project-specific). Keep short (20–50 lines) -->
 
-### Testing Strategy
-- **Feature tests** in `tests/Feature/Auth/` (LoginTest, LogoutTest, MeTest)
-- Uses PostgreSQL (same as dev), not in-memory SQLite
-- All auth flows validated: valid credentials, invalid credentials, inactive users, rate limits, token revocation
-- Run specific tests: `php artisan test tests/Feature/Auth/LoginTest.php`
+# .github/copilot-instructions.md — resumo prático
 
-### Database & Models
-- PostgreSQL in Docker (host: postgres, user: laravel, password: secret)
-- Migrations in `database/migrations/`
-- Models in `app/Models/` with relationships + casts() method
-- User model has Sanctum support: `use HasApiTokens`
+Breve: este monolito combina Laravel v12 (backend) com Inertia + React (frontend). Use Fortify (session) para UI auth e Sanctum para API tokens.
 
-Patterns and locations
-----------------------
-- Controllers: `app/Http/Controllers/` (API controllers) + `app/Http/Controllers/Api/` (API-specific)
-- Models: `app/Models/` (use casts() method, not $casts property)
-- Middleware: Registered in [bootstrap/app.php](bootstrap/app.php), aliased for reuse
-- Factories: `database/factories/` (with `inactive()` state example for User)
-- API Routes: `routes/api.php` (public & protected groups with middleware)
-- Tests: `tests/Feature/Auth/` for API tests, use Pest syntax
+- Estrutura e pontos principais:
+    - Backend: `app/`, rotas web em `routes/web.php`, API em `routes/api.php`.
+    - Frontend: `resources/js/` (pages em `resources/js/pages/`), entrada em `resources/js/app.tsx`.
+    - Auth: Fortify for session-based UI (`/login`, `/logout`); Sanctum tokens only for API clients (see `app/Http/Controllers/Api/AuthController.php`).
+    - Middleware aliases in `bootstrap/app.php`: `auth.active`, `token.not.revoked`, `auth.from-token`, `auth.token`.
 
-Integration notes & gotchas
----------------------------
-- **Sail vs Local**: Sail uses `compose.yaml` (not docker-compose.yml). Always use `docker compose` commands.
-- **PostgreSQL**: `.env` must match Docker service name: `DB_HOST=postgres`
-- **Redis**: Required for cache/sessions in dev. Sail provides it automatically.
-- **Tests**: Use `.env.testing` (same DB as dev, not separate). Migrations auto-run before tests.
-- **Middleware**: Custom middleware like `EnsureUserIsActive` and `EnsureTokenNotRevoked` in [app/Http/Middleware/](app/Http/Middleware/) and registered in bootstrap/app.php.
-- **Vite on Sail**: Port 5173 exposed. Frontend hot reload works because Sail includes Vite config.
-- **Laravel Boost**: May regenerate this file via `boost:update`. Preserve critical sections if editing.
+- Dev workflow (essential):
+    - Install: `composer install && npm install`
+    - DB (local): `php artisan migrate:fresh --seed`
+    - Frontend build: `npm run build` (or `npm run dev` for HMR)
+    - Tests: `php artisan test tests/Feature/Auth` (local uses sqlite `.env.testing`) or via Sail: `docker compose exec -T laravel.test php artisan test`
 
-Example tasks (how to change things)
------------------------------------
-### Add API endpoint
-1. Create controller: `php artisan make:controller Api/ItemController --no-interaction`
-2. Define route in `routes/api.php` with appropriate middleware
-3. Write tests in `tests/Feature/Api/ItemTest.php`
-4. Run tests: `docker compose exec -T laravel.test php artisan test tests/Feature/Api/ItemTest.php`
+- Conventions to follow strictly:
+    - Use Fortify session auth for web UI (so pages preserve login on reload). Use Sanctum tokens only for non-browser clients.
+    - When protecting web routes use `auth` middleware; for API use `auth:sanctum` then `token.not.revoked` then `auth.active`.
+    - Models use a `casts()` method (not `$casts`) — mirror `app/Models/User.php`.
+    - Forms: prefer Inertia `router` or `<Form>` patterns already in `resources/js/pages/*`.
+    - Tests: follow Pest patterns in `tests/Feature/Auth/*` and use factories.
 
-### Add new Inertia page
-1. Create page: `resources/js/pages/Items/Index.tsx`
-2. Add route in `routes/web.php`: `Route::get('/items', [ItemController::class, 'index'])`
-3. Return from controller: `Inertia::render('Items/Index', ['items' => Item::all()])`
+- Files to check for examples:
+    - `app/Http/Controllers/Api/AuthController.php` (login/logout/me)
+    - `resources/js/pages/public/auth/login.tsx` (UI login using Inertia)
+    - `resources/js/components/logout-button.tsx` and `resources/js/components/nav-user.tsx` (logout patterns)
+    - `app/Http/Middleware/` (custom middleware examples)
+    - `bootstrap/app.php` (middleware aliases and app wiring)
 
-When in doubt
--------------
-- Search code patterns in: `routes/api.php` (endpoint structure), `tests/Feature/Auth/` (testing patterns), `app/Http/Controllers/Api/AuthController.php` (authentication implementation)
-- For API flows: Check [app/Http/Controllers/Api/AuthController.php](app/Http/Controllers/Api/AuthController.php)
-- For middleware: Check [bootstrap/app.php](bootstrap/app.php) and [app/Http/Middleware/](app/Http/Middleware/)
-- For testing: Copy patterns from `tests/Feature/Auth/LoginTest.php`
+- Quick copyable examples:
+    - Inertia UI login: `router.post('/login', formData)`
+    - Inertia logout: `router.post('/logout')`
+    - Create API token: `$user->createToken('web')->plainTextToken`
 
-===
+- QA & formatting:
+    - Run `vendor/bin/pint` before committing.
+    - Rebuild frontend after UI changes: `npm run build`.
 
-<laravel-boost-guidelines>
-=== foundation rules ===
+Se precisar de mais detalhes (Wayfinder, Boost workflows, ou tradução de regras), peça para eu expandir seções específicas.
 
-# Laravel Boost Guidelines
-
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to enhance the user's satisfaction building Laravel applications.
-
-## Foundational Context
-This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
-
-- php - 8.4.0
-- inertiajs/inertia-laravel (INERTIA) - v2
-- laravel/fortify (FORTIFY) - v1
-- laravel/framework (LARAVEL) - v12
-- laravel/prompts (PROMPTS) - v0
-- laravel/sanctum (SANCTUM) - v4
-- laravel/wayfinder (WAYFINDER) - v0
-- laravel/mcp (MCP) - v0
-- laravel/pint (PINT) - v1
-- laravel/sail (SAIL) - v1
-- pestphp/pest (PEST) - v4
-- phpunit/phpunit (PHPUNIT) - v12
-- @inertiajs/react (INERTIA) - v2
-- react (REACT) - v19
-- tailwindcss (TAILWINDCSS) - v4
-- @laravel/vite-plugin-wayfinder (WAYFINDER) - v0
-- eslint (ESLINT) - v9
-- prettier (PRETTIER) - v3
-
-## Conventions
-- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, naming.
-- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
-- Check for existing components to reuse before writing a new one.
-
-## Verification Scripts
-- Do not create verification scripts or tinker when tests cover that functionality and prove it works. Unit and feature tests are more important.
-
-## Application Structure & Architecture
-- Stick to existing directory structure - don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
-
-## Frontend Bundling
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
-
-## Replies
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
-
-## Documentation Files
-- You must only create documentation files if explicitly requested by the user.
-
-
-=== boost rules ===
-
-## Laravel Boost
-- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
-
-## Artisan
-- Use the `list-artisan-commands` tool when you need to call an Artisan command to double check the available parameters.
-
-## URLs
-- Whenever you share a project URL with the user you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain / IP, and port.
-
-## Tinker / Debugging
-- You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
-- Use the `database-query` tool when you only need to read from the database.
-
-## Reading Browser Logs With the `browser-logs` Tool
-- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
-- Only recent browser logs will be useful - ignore old logs.
-
-## Searching Documentation (Critically Important)
-- Boost comes with a powerful `search-docs` tool you should use before any other approaches. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation specific for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
-- The 'search-docs' tool is perfect for all Laravel related packages, including Laravel, Inertia, Livewire, Filament, Tailwind, Pest, Nova, Nightwatch, etc.
 - You must use this tool to search for Laravel-ecosystem documentation before falling back to other approaches.
 - Search the documentation before making code changes to ensure we are taking the correct approach.
 - Use multiple, broad, simple, topic based queries to start. For example: `['rate limiting', 'routing rate limiting', 'routing']`.

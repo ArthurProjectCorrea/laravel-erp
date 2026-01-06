@@ -20,7 +20,7 @@ class AuthenticateFromToken
         $authHeader = $request->header('Authorization');
         \Log::info('[AUTH-MIDDLEWARE-DEBUG] Headers recebidos', [
             'method' => $request->getMethod(),
-            'path' => $request->getPath(),
+            'path' => $request->path(),
             'has_auth_header' => $authHeader ? 'YES' : 'NO',
             'auth_header_preview' => $authHeader ? substr($authHeader, 0, 30) : 'NONE',
             'all_headers' => array_keys($request->headers->all()),

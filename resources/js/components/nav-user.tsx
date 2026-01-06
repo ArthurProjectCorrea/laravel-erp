@@ -7,7 +7,6 @@ import {
     Sparkles,
 } from 'lucide-react';
 
-import { LogoutButton } from '@/components/logout-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -24,6 +23,7 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { router } from '@inertiajs/react';
 
 export function NavUser({
     user,
@@ -115,14 +115,13 @@ export function NavUser({
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <LogoutButton
-                            variant="ghost"
-                            size="default"
-                            className="w-full justify-start"
+                        <DropdownMenuItem
+                            onClick={() => router.post('/logout')}
+                            className="cursor-pointer"
                         >
                             <LogOut />
                             Log out
-                        </LogoutButton>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
