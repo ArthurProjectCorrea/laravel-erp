@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { cn } from '@/lib/utils';
 import { router } from '@inertiajs/react';
+import { GalleryVerticalEnd } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -92,96 +93,97 @@ export function Login({ className }: React.ComponentProps<'div'>) {
     return (
         <AuthLayout>
             <div className={cn('flex flex-col gap-6', className)}>
-                <Card className="overflow-hidden p-0">
-                    <CardContent className="grid p-0 md:grid-cols-2">
-                        <form className="p-6 md:p-8" onSubmit={handleSubmit}>
-                            <FieldGroup>
-                                <div className="flex flex-col items-center gap-2 text-center">
-                                    <h1 className="text-2xl font-bold">
-                                        Bem-vindo de volta
-                                    </h1>
-                                    <p className="text-balance text-muted-foreground">
-                                        Faça login na sua conta
-                                    </p>
+                <form onSubmit={handleSubmit}>
+                    <FieldGroup>
+                        <div className="flex flex-col items-center gap-2 text-center">
+                            <a
+                                href="#"
+                                className="flex flex-col items-center gap-2 font-medium"
+                            >
+                                <div className="flex size-8 items-center justify-center rounded-md">
+                                    <GalleryVerticalEnd className="size-6" />
                                 </div>
-                                <Field>
-                                    <FieldLabel htmlFor="email">
-                                        E-mail
-                                    </FieldLabel>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        placeholder="seu@email.com"
-                                        value={formData.email}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                email: e.target.value,
-                                            })
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                    />
-                                    {fieldErrors.email && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {fieldErrors.email}
-                                        </p>
-                                    )}
-                                </Field>
-                                <Field>
-                                    <div className="flex items-center">
-                                        <FieldLabel htmlFor="password">
-                                            Senha
-                                        </FieldLabel>
-                                        <a
-                                            href="#"
-                                            className="ml-auto text-sm underline-offset-2 hover:underline"
-                                        >
-                                            Esqueceu sua senha?
-                                        </a>
-                                    </div>
-                                    <InputPassword
-                                        id="password"
-                                        name="password"
-                                        placeholder="Sua senha"
-                                        value={formData.password}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                password: e.target.value,
-                                            })
-                                        }
-                                        disabled={isLoading}
-                                        required
-                                    />
-                                    {fieldErrors.password && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {fieldErrors.password}
-                                        </p>
-                                    )}
-                                </Field>
-                                <Field>
-                                    <Button
-                                        type="submit"
-                                        className="w-full"
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <Spinner className="mr-2" />
-                                                Entrando...
-                                            </>
-                                        ) : (
-                                            'Entrar'
-                                        )}
-                                    </Button>
-                                </Field>
-                            </FieldGroup>
-                        </form>
-                        <div className="relative hidden bg-muted md:block"></div>
-                    </CardContent>
-                </Card>
+                                <span className="sr-only">Acme Inc.</span>
+                            </a>
+                            <h1 className="text-xl font-bold">Bem-vindo de volta Acme Inc.</h1>
+
+                        </div>
+                        <Field>
+                            <FieldLabel htmlFor="email">
+                                E-mail
+                            </FieldLabel>
+                            <Input
+                                id="email"
+                                type="email"
+                                name="email"
+                                placeholder="seu@email.com"
+                                value={formData.email}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        email: e.target.value,
+                                    })
+                                }
+                                disabled={isLoading}
+                                required
+                            />
+                            {fieldErrors.email && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {fieldErrors.email}
+                                </p>
+                            )}
+                        </Field>
+                        <Field>
+                            <div className="flex items-center">
+                                <FieldLabel htmlFor="password">
+                                    Senha
+                                </FieldLabel>
+                                <a
+                                    href="/forgot-password"
+                                    className="ml-auto text-sm underline-offset-2 hover:underline"
+                                >
+                                    Esqueceu sua senha?
+                                </a>
+                            </div>
+                            <InputPassword
+                                id="password"
+                                name="password"
+                                placeholder="Sua senha"
+                                value={formData.password}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        password: e.target.value,
+                                    })
+                                }
+                                disabled={isLoading}
+                                required
+                            />
+                            {fieldErrors.password && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {fieldErrors.password}
+                                </p>
+                            )}
+                        </Field>
+                        <Field>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Spinner className="mr-2" />
+                                        Entrando...
+                                    </>
+                                ) : (
+                                    'Entrar'
+                                )}
+                            </Button>
+                        </Field>
+                    </FieldGroup>
+                </form>
+                <div className="relative hidden bg-muted md:block"></div>
                 <FieldDescription className="px-6 text-center">
                     Ao continuar, você concorda com nossos{' '}
                     <a href="#">Termos de Serviço</a> e{' '}
