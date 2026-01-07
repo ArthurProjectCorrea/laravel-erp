@@ -1,6 +1,5 @@
 import { InputPassword } from '@/components/input-password';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Field,
     FieldDescription,
@@ -71,13 +70,30 @@ export function Login({ className }: React.ComponentProps<'div'>) {
             },
             onError: (errors) => {
                 console.log('[LOGIN] Falha no login - Erros:', errors);
+                const normalizeMessage = (msg: unknown, fallback: string) => {
+                    if (!msg) return fallback;
+                    const s = String(msg);
+                    if (s === 'auth.failed') return 'Credenciais inválidas';
+                    // If it's a translation key like "validation.required", return fallback
+                    if (/^[a-z0-9_]+(\.[a-z0-9_]+)+$/i.test(s)) return fallback;
+                    return s;
+                };
+
                 if (errors.email) {
-                    setFieldErrors({ email: errors.email });
+                    setFieldErrors({
+                        email: normalizeMessage(
+                            errors.email,
+                            'Credenciais inválidas',
+                        ),
+                    });
                 }
                 if (errors.password) {
                     setFieldErrors((prev) => ({
                         ...prev,
-                        password: errors.password,
+                        password: normalizeMessage(
+                            errors.password,
+                            'Senha inválida',
+                        ),
                     }));
                 }
                 toast.error('Credenciais inválidas', {
@@ -105,13 +121,12 @@ export function Login({ className }: React.ComponentProps<'div'>) {
                                 </div>
                                 <span className="sr-only">Acme Inc.</span>
                             </a>
-                            <h1 className="text-xl font-bold">Bem-vindo de volta Acme Inc.</h1>
-
+                            <h1 className="text-xl font-bold">
+                                Bem-vindo de volta Acme Inc.
+                            </h1>
                         </div>
                         <Field>
-                            <FieldLabel htmlFor="email">
-                                E-mail
-                            </FieldLabel>
+                            <FieldLabel htmlFor="email">E-mail</FieldLabel>
                             <Input
                                 id="email"
                                 type="email"

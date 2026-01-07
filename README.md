@@ -1,109 +1,129 @@
 # Laravel ERP (Backend + Inertia/React)
 
-Lightweight README to get started with development, testing and common tasks.
+Visão geral rápida e guia para desenvolvimento.
 
-## Quick overview
-- Backend: Laravel v12 (app/*), REST API with Sanctum tokens.
-- Frontend: Inertia + React (resources/js/*), bundled with Vite.
-- Dev environment: Laravel Sail (Docker) providing PostgreSQL, Redis and Mailpit.
-- Tests: Pest / PHPUnit feature tests located under `tests/Feature/`.
+## Visão Geral
+- Backend: Laravel v12 (app/*), API REST com tokens Sanctum.
+- Frontend: Inertia + React (resources/js/*), empacotado com Vite.
+- Ambiente de Desenvolvimento: Recursos locais com SQLite. Docker (Sail) é usado apenas para produção com PostgreSQL, Redis e Mailpit.
+- Testes: Pest / PHPUnit em `tests/Feature/`.
 
-## Prerequisites
-- Docker (desktop) and Docker Compose
-- PHP, Composer, Node/npm (only needed if running locally without Sail)
+## Pré-requisitos
+- PHP (versão compatível com Laravel v12)
+- Composer
+- Node.js e npm
+- SQLite (incluído no PHP)
 
-## Start development (recommended: Sail)
-1. Start containers:
+**Nota:** Não use Docker para desenvolvimento. Use apenas recursos locais com SQLite. Docker é exclusivo para produção.
 
-```bash
-docker compose up -d
-```
+## Guia Após Clonar o Repositório
+1. Clone o repositório:
+   ```bash
+   git clone <url-do-repo>
+   cd laravel-erp
+   ```
 
-2. Run artisan commands inside the container:
+2. Instale dependências do PHP:
+   ```bash
+   composer install
+   ```
 
-```bash
-docker compose exec -T laravel.test php artisan migrate --force
-docker compose exec -T laravel.test php artisan db:seed --force
-```
+3. Instale dependências do Node.js:
+   ```bash
+   npm install
+   ```
 
-3. Start frontend dev server (HMR) — either inside container or locally:
+4. Configure o ambiente:
+   - Copie o arquivo `.env.example` para `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Edite `.env` para desenvolvimento local com SQLite:
+     - `DB_CONNECTION=sqlite`
+     - `DB_DATABASE=./database/database.sqlite`
+     - Ajuste outras configurações se necessário (ex.: APP_URL=http://localhost:8000)
 
-```bash
-# inside container
-docker compose exec -T laravel.test bash -lc "npm run dev"
+5. Gere a chave da aplicação:
+   ```bash
+   php artisan key:generate
+   ```
 
-# or locally
-npm install
-npm run dev
-```
+6. Crie o banco de dados SQLite:
+   ```bash
+   touch database/database.sqlite
+   ```
 
-Frontend HMR (Vite) is available on port `5173` and backend on port `80`.
+7. Execute as migrações:
+   ```bash
+   php artisan migrate
+   ```
 
-## Useful commands
-- Artisan (inside sail): `docker compose exec -T laravel.test php artisan <command>`
-- Run tests:
+8. Execute as seeds (opcional, para dados iniciais):
+   ```bash
+   php artisan db:seed
+   ```
 
-```bash
-docker compose exec -T laravel.test php artisan test
-```
+9. Inicie o servidor backend:
+   ```bash
+   php artisan serve
+   ```
+   - Disponível em http://localhost:8000
 
-- View logs:
+10. Inicie o servidor frontend (HMR):
+    ```bash
+    npm run dev
+    ```
+    - Disponível em http://localhost:5173
 
-```bash
-docker compose logs -f laravel.test
-```
+## Comandos Úteis
+- Executar migrações: `php artisan migrate`
+- Executar seeds: `php artisan db:seed`
+- Rodar testes: `php artisan test`
+- Limpar cache: `php artisan cache:clear`
+- Build frontend para produção: `npm run build`
 
-- Enter shell:
+## Ambiente
+- Arquivo principal: `.env`
+  - Desenvolvimento: SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE=./database/database.sqlite`)
+  - Produção: PostgreSQL via Docker Sail
+- Ambiente de teste: `.env.testing` (usa SQLite por padrão, veja `phpunit.xml`)
 
-```bash
-docker compose exec -T laravel.test bash
-```
+## API de Autenticação (referência rápida)
+- POST `/api/login` — body: `{ email, password }` → retorna token
+- POST `/api/logout` — requer `Authorization: Bearer <token>` → revoga token
+- GET `/api/me` — requer token → retorna usuário autenticado
 
-## Environment
-- Primary environment file: `.env` — this project uses PostgreSQL in Docker:
-  - `DB_HOST=postgres`
-  - `DB_DATABASE=laravel_erp`
-  - `DB_USERNAME=laravel`
-  - `DB_PASSWORD=secret`
-
-- Testing environment: `.env.testing` exists and is used by tests; by default tests run against the same DB in this setup (development DB). See `phpunit.xml` and `.env.testing`.
-
-## Authentication API (quick reference)
-- POST `/api/login` — body: `{ email, password }` → returns token
-- POST `/api/logout` — requires `Authorization: Bearer <token>` → revokes token
-- GET `/api/me` — requires token → returns authenticated user
-
-Middleware order for protected routes (important):
+Ordem de middleware para rotas protegidas:
 1. `auth:sanctum`
-2. `token.not.revoked` (custom, checks revoked tokens)
-3. `auth.active` (custom, checks `is_active` on `User`)
+2. `token.not.revoked` (custom, verifica tokens revogados)
+3. `auth.active` (custom, verifica `is_active` no User)
 
-See `routes/api.php` for concrete usage.
+Veja `routes/api.php` para uso concreto.
 
-## Tests & Patterns
-- Tests live in `tests/Feature/` (Pest compatible file patterns exist)
-- Authentication tests: `tests/Feature/Auth/` (LoginTest, LogoutTest, MeTest)
-- Use model factories (`database/factories/`) and `RefreshDatabase` semantics where used.
-- For API tests, use `$this->postJson()` / `$this->getJson()` and pass token header: `['Authorization' => 'Bearer ' . $token]`.
+## Testes e Padrões
+- Testes em `tests/Feature/` (compatível com Pest)
+- Testes de auth: `tests/Feature/Auth/`
+- Use factories de modelo (`database/factories/`) e `RefreshDatabase`
+- Para testes API, use `$this->postJson()` / `$this->getJson()` e passe header: `['Authorization' => 'Bearer ' . $token]`
 
-## Conventions & guidelines (project-specific)
-- Use `casts()` method on models instead of `$casts` property where present in the codebase.
-- Register custom middleware aliases in `bootstrap/app.php`.
-- When adding API endpoints:
-  - Create controller under `app/Http/Controllers/Api/`
-  - Add route in `routes/api.php` and apply middleware group
-  - Add feature tests under `tests/Feature/Api/` and run them via `php artisan test` in Sail
+## Convenções e Diretrizes
+- Use método `casts()` nos modelos ao invés de propriedade `$casts`
+- Registre aliases de middleware custom em `bootstrap/app.php`
+- Ao adicionar endpoints API:
+  - Crie controller em `app/Http/Controllers/Api/`
+  - Adicione rota em `routes/api.php` e aplique grupo de middleware
+  - Adicione testes em `tests/Feature/Api/` e rode com `php artisan test`
 
 ## Troubleshooting
-- Vite manifest error: run `npm run build` or start `npm run dev`.
-- If Docker containers fail to start, check `compose.yaml` (Sail) and `docker compose logs` for the `laravel.test` service.
-- If tests depend on database connectivity, ensure `postgres` container is healthy and `DB_HOST` is `postgres`.
+- Erro de manifest Vite: rode `npm run build` ou `npm run dev`
+- Problemas com banco: verifique se `database/database.sqlite` existe e permissões
+- Testes falhando: certifique-se de que o banco de teste está configurado corretamente
 
-## Where to look
-- Auth controller & middleware: `app/Http/Controllers/Api/AuthController.php`, `app/Http/Middleware/`
-- Routes: `routes/api.php`, `routes/web.php`
-- Frontend entry: `resources/js/app.tsx`, pages under `resources/js/pages/`
-- Tests: `tests/Feature/Auth/`
+## Onde Olhar
+- Controller e middleware de auth: `app/Http/Controllers/Api/AuthController.php`, `app/Http/Middleware/`
+- Rotas: `routes/api.php`, `routes/web.php`
+- Entrada frontend: `resources/js/app.tsx`, páginas em `resources/js/pages/`
+- Testes: `tests/Feature/Auth/`
 
 ---
-If you want a longer README (deployment, CI, environment matrix, or contributor guide), tell me which sections to expand and I will add them.
+Para um README mais detalhado (deploy, CI, etc.), solicite expansões.

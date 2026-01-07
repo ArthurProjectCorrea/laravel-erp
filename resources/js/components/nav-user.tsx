@@ -24,6 +24,7 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { router } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 export function NavUser({
     user,
@@ -116,7 +117,26 @@ export function NavUser({
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                            onClick={() => router.post('/logout')}
+                            onClick={() =>
+                                router.post(
+                                    '/logout',
+                                    {},
+                                    {
+                                        onSuccess: () => {
+                                            toast.success('Logout realizado', {
+                                                description:
+                                                    'Você foi desconectado com sucesso.',
+                                            });
+                                        },
+                                        onError: () => {
+                                            toast.error('Erro ao sair', {
+                                                description:
+                                                    'Não foi possível finalizar a sessão.',
+                                            });
+                                        },
+                                    },
+                                )
+                            }
                             className="cursor-pointer"
                         >
                             <LogOut />

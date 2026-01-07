@@ -1,0 +1,211 @@
+import { GalleryVerticalEnd } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from '@/components/ui/field';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSeparator,
+    InputOTPSlot,
+} from '@/components/ui/input-otp';
+import { Spinner } from '@/components/ui/spinner';
+import AuthLayout from '@/layouts/auth-layout';
+import { cn } from '@/lib/utils';
+import { router, usePage } from '@inertiajs/react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+interface PageProps {
+    email?: string;
+    flash?: {
+        status?: string;
+    };
+    errors?: {
+        code?: string;
+        email?: string;
+    };
+}
+
+export function VerifyCode({
+    className,
+    ...props
+}: React.ComponentProps<'div'>) {
+    const {
+        email: initialEmail,
+        flash,
+        errors: serverErrors,
+    } = usePage<PageProps>().props;
+    const [email] = useState(initialEmail || '');
+    const [code, setCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [localErrors, setLocalErrors] = useState<{
+        code?: string;
+        email?: string;
+    }>({});
+
+    // Derivar fieldErrors do serverErrors usando useMemo (evita setState em useEffect)
+    const fieldErrors = useMemo(
+        () => ({ ...serverErrors, ...localErrors }),
+        [serverErrors, localErrors],
+    );
+
+    useEffect(() => {
+        if (flash?.status) {
+            toast.success(flash.status);
+        }
+        if (serverErrors?.code) {
+            toast.error('Erro', { description: serverErrors.code });
+        }
+    }, [flash, serverErrors]);
+
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLocalErrors({});
+
+        if (!email) {
+            setLocalErrors({ email: 'O e-mail é obrigatório.' });
+            return;
+        }
+
+        if (!code || code.length !== 6) {
+            setLocalErrors({ code: 'Insira o código de 6 dígitos.' });
+            return;
+        }
+
+        setIsLoading(true);
+
+        router.post(
+            '/verify-code',
+            { email, code },
+            {
+                onSuccess: () => {
+                    toast.success('Código verificado!', {
+                        description: 'Defina sua nova senha.',
+                    });
+                },
+                onError: (errors) => {
+                    if (errors.code) {
+                        setLocalErrors({ code: errors.code });
+                        toast.error('Erro', { description: errors.code });
+                    }
+                    if (errors.email) {
+                        setLocalErrors((prev) => ({
+                            ...prev,
+                            email: errors.email,
+                        }));
+                    }
+                },
+                onFinish: () => {
+                    setIsLoading(false);
+                },
+            },
+        );
+    };
+
+    return (
+        <AuthLayout>
+            <div className={cn('flex flex-col gap-6', className)} {...props}>
+                <form onSubmit={handleSubmit}>
+                    <FieldGroup>
+                        <div className="flex flex-col items-center gap-2 text-center">
+                            <a
+                                href="/"
+                                className="flex flex-col items-center gap-2 font-medium"
+                            >
+                                <div className="flex size-8 items-center justify-center rounded-md">
+                                    <GalleryVerticalEnd className="size-6" />
+                                </div>
+                                <span className="sr-only">Acme Inc.</span>
+                            </a>
+                            <h1 className="text-xl font-bold">
+                                Insira o código de verificação
+                            </h1>
+                            <FieldDescription>
+                                Enviamos um código de 6 dígitos para o seu
+                                endereço de e-mail
+                            </FieldDescription>
+                        </div>
+
+                        <input type="hidden" name="email" value={email} />
+
+                        <Field>
+                            <FieldLabel htmlFor="otp" className="sr-only">
+                                Código de verificação
+                            </FieldLabel>
+                            <InputOTP
+                                maxLength={6}
+                                id="otp"
+                                value={code}
+                                onChange={(value) => setCode(value)}
+                                disabled={isLoading}
+                                containerClassName="gap-4 justify-center"
+                            >
+                                <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-16 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                </InputOTPGroup>
+                                <InputOTPSeparator />
+                                <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:h-16 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:text-xl">
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                </InputOTPGroup>
+                            </InputOTP>
+                            {fieldErrors.code && (
+                                <p className="mt-2 text-center text-sm text-red-600">
+                                    {fieldErrors.code}
+                                </p>
+                            )}
+                            <FieldDescription className="text-center">
+                                Não recebeu o código?{' '}
+                                <a
+                                    href="/forgot-password"
+                                    className="underline underline-offset-2 hover:text-primary"
+                                >
+                                    Solicitar novo código
+                                </a>
+                            </FieldDescription>
+                        </Field>
+                        <Field>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading || code.length !== 6}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Spinner className="mr-2" />
+                                        Verificando...
+                                    </>
+                                ) : (
+                                    'Verificar'
+                                )}
+                            </Button>
+                        </Field>
+                        <FieldDescription className="text-center">
+                            <a
+                                href="/login"
+                                className="underline underline-offset-2"
+                            >
+                                Voltar ao login
+                            </a>
+                        </FieldDescription>
+                    </FieldGroup>
+                </form>
+                <FieldDescription className="px-6 text-center">
+                    Ao continuar, você concorda com nossos{' '}
+                    <a href="#">Termos de Serviço</a> e{' '}
+                    <a href="#">Política de Privacidade</a>.
+                </FieldDescription>
+            </div>
+        </AuthLayout>
+    );
+}
+
+export default VerifyCode;
